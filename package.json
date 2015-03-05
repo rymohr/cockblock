@@ -1,6 +1,6 @@
 {
   "name": "cockblock",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "http://github.com/rymohr/cockblock",
   "repository": "http://github.com/rymohr/cockblock",
   "description": "Keep your pants on, xss",

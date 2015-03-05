@@ -48,6 +48,7 @@
       "pre",
       "q",
       "samp",
+      "span",
       "strike",
       "strong",
       "sub",
