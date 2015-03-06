@@ -43,7 +43,7 @@ cockblock.defaults = {
 };
 ```
 
-See [cockblock.js][source] for the default set of allowed elements, attributes, and
+See [lib/cockblock.js][source] for the default set of allowed elements, attributes, and
 supported protocols.
 
 # Contributing
@@ -59,10 +59,7 @@ make test          # run tests within console / cheerio
 make test-browser  # run tests within browser / jquery
 ```
 
-Now that you're up and running go ahead and hack away.  The full library
-is defined in `cockblock.js`.
-
-[source]: https://github.com/kumu/cockblock.js/blob/master/cockblock.js
+[source]: https://github.com/kumu/cockblock.js/blob/master/lib/cockblock.js
 [dist]: https://github.com/kumu/cockblock.js/blob/master/dist/cockblock.js
 [html-pipeline]: https://github.com/jch/html-pipeline
 [cheerio]: https://github.com/MatthewMueller/cheerio

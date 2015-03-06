@@ -1,5 +1,5 @@
 var expect = require("chai").expect;
-var cockblock = require("../cockblock");
+var cockblock = require("..");
 
 describe("cockblock()", function() {
   function html(given, expected) {

@@ -1,7 +1,273 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+module.exports = require("./lib/cockblock");
+module.exports.version = require("./package").version;
+
+},{"./lib/cockblock":2,"./package":34}],2:[function(require,module,exports){
+var $ = (window.$);
+
+function cockblock(html, options) {
+  return sanitizeHtml(html, options || cockblock.defaults);
+}
+
+cockblock.url = function(url, options) {
+  return sanitizeResource(url, options || cockblock.defaults);
+};
+
+// Exposed for testing
+// TODO: expose these under cockblock.utils instead
+cockblock._sanitizeAttributes = sanitizeAttributes;
+cockblock._getAttributeName = getAttributeName;
+
+cockblock.defaults = {
+  elements: [
+    "a",
+    "aside",
+    "b",
+    "blockquote",
+    "br",
+    "caption",
+    "code",
+    "del",
+    "dd",
+    "dfn",
+    "div",
+    "dl",
+    "dt",
+    "em",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "i",
+    "img",
+    "ins",
+    "kbd",
+    "li",
+    "ol",
+    "p",
+    "pre",
+    "q",
+    "samp",
+    "span",
+    "strike",
+    "strong",
+    "sub",
+    "sup",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "tt",
+    "ul",
+    "var"
+  ],
+
+  attributes: {
+    "a": ["href"],
+    "img": ["src"],
+    "div": ["itemscope", "itemtype"],
+    "all": [
+      "abbr",
+      "accept",
+      "accept-charset",
+      "accesskey",
+      "action",
+      "align",
+      "alt",
+      "axis",
+      "border",
+      "cellpadding",
+      "cellspacing",
+      "char",
+      "charoff",
+      "charset",
+      "checked",
+      "cite",
+      "clear",
+      "cols",
+      "colspan",
+      "color",
+      "compact",
+      "coords",
+      // "data-[a-z0-9-]+",
+      "datetime",
+      "dir",
+      "disabled",
+      "enctype",
+      "for",
+      "frame",
+      "headers",
+      "height",
+      "hreflang",
+      "hspace",
+      "ismap",
+      "label",
+      "lang",
+      "longdesc",
+      "maxlength",
+      "media",
+      "method",
+      "multiple",
+      "name",
+      "nohref",
+      "noshade",
+      "nowrap",
+      "prompt",
+      "readonly",
+      "rel",
+      "rev",
+      "rows",
+      "rowspan",
+      "rules",
+      "scope",
+      "selected",
+      "shape",
+      "size",
+      "span",
+      "start",
+      "summary",
+      "tabindex",
+      "target",
+      "title",
+      "type",
+      "usemap",
+      "valign",
+      "value",
+      "vspace",
+      "width",
+      "itemprop"
+    ]
+  },
+
+  // Default protocol support includes http(s), mailto, and relative.
+  // TODO: Support protocol resolution too? //example.com
+  protocols: /^(http|https|mailto|#|\/)/i
+};
+
+var CONTAINED = {};
+CONTAINED.thead = CONTAINED.tbody = CONTAINED.tfoot = /^table$/i;
+CONTAINED.tr = /^(table|thead|tbody|tfoot)$/i;
+CONTAINED.th = CONTAINED.td = /^tr$/i;
+CONTAINED.li = /^(ul|ol)$/i;
+
+// src: img, iframe
+// href: a
+var RESOURCEFUL = /^(src|href)$/;
+
+function sanitizeHtml(html, options) {
+  var $wrapper = $("<body>").html(html);
+  sanitizeChildren($wrapper, initializeOptions(options));
+  return $wrapper.html();
+}
+
+function initializeOptions(options) {
+  var opts = {};
+  opts.protocols = options.protocols;
+  opts.elements = arrayToRegExp(options.elements);
+  opts.attributes = {};
+  for (var tagName in options.attributes) {
+    var attributes = options.attributes[tagName];
+    if (tagName != "all") attributes = attributes.concat(options.attributes.all);
+    opts.attributes[tagName] = arrayToRegExp(attributes);
+  }
+  return opts;
+}
+
+function arrayToRegExp(array) {
+  return new RegExp("^(" + array.join("|") + ")$", "i");
+}
+
+function sanitizeElement($el, options) {
+  if (options.elements.test(getTagName($el)) && isContained($el)) {
+    sanitizeAttributes($el, options);
+    sanitizeChildren($el, options);
+    return $el;
+  } else {
+    $el.remove();
+  }
+}
+
+function sanitizeChildren($el, options) {
+  $el.children().each(function() {
+    sanitizeElement($(this), options);
+  });
+}
+
+// List and table items must be contained or they can break out.
+function isContained($el) {
+  var requiredParent = CONTAINED[getTagNameLower($el)];
+  return !requiredParent || requiredParent.test(getTagName($el.parent()));
+}
+
+function sanitizeAttributes($el, options) {
+  var tagName = getTagNameLower($el);
+  var attribute, attributes = getAttributes($el);
+  var whitelist = options.attributes[tagName] || options.attributes.all;
+
+  for (var index in attributes) {
+    if (attributes.hasOwnProperty(index)) {
+      if ((attribute = getAttributeName(attributes, index))) {
+        if (whitelist.test(attribute)) {
+          sanitizeAttribute($el, attribute, options);
+        } else {
+          $el.removeAttr(attribute);
+        }
+      }
+    }
+  }
+}
+
+function sanitizeAttribute($el, attribute, options) {
+  if (RESOURCEFUL.test(attribute)) {
+    $el.attr(attribute, sanitizeResource($el.attr(attribute), options));
+  }
+}
+
+function sanitizeResource(value, options) {
+  return (value && options.protocols.test(value)) ? value : '';
+}
+
+// Conformity helpers since cheerio couldn't go the easy route and just
+// use the same variable names browsers do.
+function getTagName($el) {
+  return $el[0].tagName || $el[0].name;
+}
+
+function getTagNameLower($el) {
+  return getTagName($el).toLowerCase();
+}
+
+function getAttributes($el) {
+  return $el[0].attributes || $el[0].attribs;
+}
+
+// In the browser the attributes object looks like:
+// {"0": {"name": "class"}, "1": ...}
+//
+// In node / cheerio the attributes are keyed by name instead.
+//
+// - in IE9 it's possible for attribute to be undefined (issue #1)
+function getAttributeName(attributes, index) {
+  if (Number(index) == index) {
+    var attribute = attributes[String(index)];
+    return attribute && attribute.name;
+  } else {
+    return index;
+  }
+}
+
+module.exports = cockblock;
+
+},{}],3:[function(require,module,exports){
 module.exports = require('./lib/chai');
 
-},{"./lib/chai":2}],2:[function(require,module,exports){
+},{"./lib/chai":4}],4:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -83,7 +349,7 @@ exports.use(should);
 var assert = require('./chai/interface/assert');
 exports.use(assert);
 
-},{"./chai/assertion":3,"./chai/core/assertions":4,"./chai/interface/assert":5,"./chai/interface/expect":6,"./chai/interface/should":7,"./chai/utils":18,"assertion-error":27}],3:[function(require,module,exports){
+},{"./chai/assertion":5,"./chai/core/assertions":6,"./chai/interface/assert":7,"./chai/interface/expect":8,"./chai/interface/should":9,"./chai/utils":20,"assertion-error":29}],5:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -219,7 +485,7 @@ module.exports = function (_chai, util) {
   });
 };
 
-},{}],4:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -1518,7 +1784,7 @@ module.exports = function (chai, _) {
   });
 };
 
-},{}],5:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2576,7 +2842,7 @@ module.exports = function (chai, util) {
   ('Throw', 'throws');
 };
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2590,7 +2856,7 @@ module.exports = function (chai, util) {
 };
 
 
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2668,7 +2934,7 @@ module.exports = function (chai, util) {
   chai.Should = loadShould;
 };
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /*!
  * Chai - addChainingMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2776,7 +3042,7 @@ module.exports = function (ctx, name, method, chainingBehavior) {
   });
 };
 
-},{"./transferFlags":25}],9:[function(require,module,exports){
+},{"./transferFlags":27}],11:[function(require,module,exports){
 /*!
  * Chai - addMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2815,7 +3081,7 @@ module.exports = function (ctx, name, method) {
   };
 };
 
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /*!
  * Chai - addProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2857,7 +3123,7 @@ module.exports = function (ctx, name, getter) {
   });
 };
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2891,7 +3157,7 @@ module.exports = function (obj, key, value) {
   }
 };
 
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /*!
  * Chai - getActual utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2912,7 +3178,7 @@ module.exports = function (obj, args) {
   return 'undefined' !== typeof actual ? actual : obj._obj;
 };
 
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /*!
  * Chai - getEnumerableProperties utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2939,7 +3205,7 @@ module.exports = function getEnumerableProperties(object) {
   return result;
 };
 
-},{}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*!
  * Chai - message composition utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -2990,7 +3256,7 @@ module.exports = function (obj, args) {
   return flagMsg ? flagMsg + ': ' + msg : msg;
 };
 
-},{"./flag":11,"./getActual":12,"./inspect":19,"./objDisplay":20}],15:[function(require,module,exports){
+},{"./flag":13,"./getActual":14,"./inspect":21,"./objDisplay":22}],17:[function(require,module,exports){
 /*!
  * Chai - getName utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3012,7 +3278,7 @@ module.exports = function (func) {
   return match && match[1] ? match[1] : "";
 };
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /*!
  * Chai - getPathValue utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3116,7 +3382,7 @@ function _getPathValue (parsed, obj) {
   return res;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /*!
  * Chai - getProperties utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3153,7 +3419,7 @@ module.exports = function getProperties(object) {
   return result;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011 Jake Luer <jake@alogicalparadox.com>
@@ -3269,7 +3535,7 @@ exports.addChainableMethod = require('./addChainableMethod');
 exports.overwriteChainableMethod = require('./overwriteChainableMethod');
 
 
-},{"./addChainableMethod":8,"./addMethod":9,"./addProperty":10,"./flag":11,"./getActual":12,"./getMessage":14,"./getName":15,"./getPathValue":16,"./inspect":19,"./objDisplay":20,"./overwriteChainableMethod":21,"./overwriteMethod":22,"./overwriteProperty":23,"./test":24,"./transferFlags":25,"./type":26,"deep-eql":28}],19:[function(require,module,exports){
+},{"./addChainableMethod":10,"./addMethod":11,"./addProperty":12,"./flag":13,"./getActual":14,"./getMessage":16,"./getName":17,"./getPathValue":18,"./inspect":21,"./objDisplay":22,"./overwriteChainableMethod":23,"./overwriteMethod":24,"./overwriteProperty":25,"./test":26,"./transferFlags":27,"./type":28,"deep-eql":30}],21:[function(require,module,exports){
 // This is (almost) directly from Node.js utils
 // https://github.com/joyent/node/blob/f8c335d0caf47f16d31413f89aa28eda3878e3aa/lib/util.js
 
@@ -3591,7 +3857,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 
-},{"./getEnumerableProperties":13,"./getName":15,"./getProperties":17}],20:[function(require,module,exports){
+},{"./getEnumerableProperties":15,"./getName":17,"./getProperties":19}],22:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3641,7 +3907,7 @@ module.exports = function (obj) {
   }
 };
 
-},{"./inspect":19}],21:[function(require,module,exports){
+},{"./inspect":21}],23:[function(require,module,exports){
 /*!
  * Chai - overwriteChainableMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3696,7 +3962,7 @@ module.exports = function (ctx, name, method, chainingBehavior) {
   };
 };
 
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 /*!
  * Chai - overwriteMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3749,7 +4015,7 @@ module.exports = function (ctx, name, method) {
   }
 };
 
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*!
  * Chai - overwriteProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3805,7 +4071,7 @@ module.exports = function (ctx, name, getter) {
   });
 };
 
-},{}],24:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*!
  * Chai - test utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3833,7 +4099,7 @@ module.exports = function (obj, args) {
   return negate ? !expr : expr;
 };
 
-},{"./flag":11}],25:[function(require,module,exports){
+},{"./flag":13}],27:[function(require,module,exports){
 /*!
  * Chai - transferFlags utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3879,7 +4145,7 @@ module.exports = function (assertion, object, includeAll) {
   }
 };
 
-},{}],26:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*!
  * Chai - type utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3926,7 +4192,7 @@ module.exports = function (obj) {
   return typeof obj;
 };
 
-},{}],27:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*!
  * assertion-error
  * Copyright(c) 2013 Jake Luer <jake@qualiancy.com>
@@ -4038,10 +4304,10 @@ AssertionError.prototype.toJSON = function (stack) {
   return props;
 };
 
-},{}],28:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 module.exports = require('./lib/eql');
 
-},{"./lib/eql":29}],29:[function(require,module,exports){
+},{"./lib/eql":31}],31:[function(require,module,exports){
 /*!
  * deep-eql
  * Copyright(c) 2013 Jake Luer <jake@alogicalparadox.com>
@@ -4300,10 +4566,10 @@ function objectEqual(a, b, m) {
   return true;
 }
 
-},{"buffer":33,"type-detect":30}],30:[function(require,module,exports){
+},{"buffer":36,"type-detect":32}],32:[function(require,module,exports){
 module.exports = require('./lib/type');
 
-},{"./lib/type":31}],31:[function(require,module,exports){
+},{"./lib/type":33}],33:[function(require,module,exports){
 /*!
  * type-detect
  * Copyright(c) 2013 jake luer <jake@alogicalparadox.com>
@@ -4447,9 +4713,60 @@ Library.prototype.test = function (obj, type) {
   }
 };
 
-},{}],32:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
+module.exports={
+  "name": "cockblock",
+  "version": "1.0.2",
+  "homepage": "http://github.com/rymohr/cockblock",
+  "repository": "http://github.com/rymohr/cockblock",
+  "description": "Keep your pants on, xss",
+  "keywords": [
+    "xss",
+    "html",
+    "security",
+    "sanitation",
+    "sanitize",
+    "sanitizer",
+    "javascript",
+    "js",
+    "node",
+    "browser"
+  ],
+  "bugs": {
+    "url": "https://github.com/rymohr/cockblock/issues",
+    "email": "ryan@kumu.io"
+  },
+  "license": "MIT",
+  "main": "index.js",
+  "dependencies": {
+    "cheerio": "*"
+  },
+  "devDependencies": {
+    "jquery": "*",
+    "chai": "~1.9.0",
+    "mocha": "~1.17.1",
+    "gulp": "~3.2.4",
+    "gulp-jshint": "~1.3.4",
+    "browserify": "~3.32.0",
+    "browserify-shim": "~3.3.1",
+    "gulp-replace": "~0.2.0",
+    "gulp-uglify": "~0.2.1",
+    "gulp-header": "~1.2.2",
+    "vinyl-transform": "~1.0.0"
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim"
+    ]
+  },
+  "browserify-shim": {
+    "cheerio": "global:$"
+  }
+}
+
+},{}],35:[function(require,module,exports){
 var expect = require("chai").expect;
-var cockblock = (window.cockblock);
+var cockblock = require("..");
 
 describe("cockblock()", function() {
   function html(given, expected) {
@@ -4570,7 +4887,7 @@ describe("getAttributeName()", function() {
   });
 });
 
-},{"chai":1}],33:[function(require,module,exports){
+},{"..":1,"chai":3}],36:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -5741,7 +6058,7 @@ function assert (test, message) {
   if (!test) throw new Error(message || 'Failed assertion')
 }
 
-},{"base64-js":34,"ieee754":35}],34:[function(require,module,exports){
+},{"base64-js":37,"ieee754":38}],37:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -5863,7 +6180,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],35:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -5949,4 +6266,4 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}]},{},[32]);
+},{}]},{},[35]);
