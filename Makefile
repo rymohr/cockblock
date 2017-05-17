@@ -7,13 +7,7 @@ test-browser: browserify-tests
 browserify-tests:
 	@browserify test/index.js > test/browser/index.js
 
-lint:
-	@gulp lint
-
-build:
-	@gulp build
-
 publish:
-	@gulp build && npm publish .
+	@npm publish .
 
 .PHONY: test
