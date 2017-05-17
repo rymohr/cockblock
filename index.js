@@ -1,7 +1,13 @@
-var $ = require("cheerio");
-
 function cockblock(html, options) {
   return sanitizeHtml(html, options || cockblock.defaults);
+}
+
+function $wrap(value) {
+  if (!cockblock.$) {
+    throw new Error("cockblock.$ must be set to cheerio to jquery");
+  }
+
+  return cockblock.$(value);
 }
 
 cockblock.url = function(url, options) {
@@ -156,7 +162,7 @@ CONTAINED.li = /^(ul|ol)$/i;
 var RESOURCEFUL = /^(src|href)$/;
 
 function sanitizeHtml(html, options) {
-  var $wrapper = $("<body>");
+  var $wrapper = $wrap("<body>");
   $wrapper.html(html);
   sanitizeChildren($wrapper, initializeOptions(options));
   return $wrapper.html();
@@ -191,7 +197,7 @@ function sanitizeElement($el, options) {
 
 function sanitizeChildren($el, options) {
   $el.children().each(function() {
-    sanitizeElement($(this), options);
+    sanitizeElement($wrap(this), options);
   });
 }
 

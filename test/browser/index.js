@@ -1,12 +1,14 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-module.exports = require("./lib/cockblock");
-
-},{"./lib/cockblock":2}],2:[function(require,module,exports){
-(function (global){
-var $ = (typeof window !== "undefined" ? window['$'] : typeof global !== "undefined" ? global['$'] : null);
-
 function cockblock(html, options) {
   return sanitizeHtml(html, options || cockblock.defaults);
+}
+
+function $wrap(value) {
+  if (!cockblock.$) {
+    throw new Error("cockblock.$ must be set to cheerio to jquery");
+  }
+
+  return cockblock.$(value);
 }
 
 cockblock.url = function(url, options) {
@@ -161,7 +163,7 @@ CONTAINED.li = /^(ul|ol)$/i;
 var RESOURCEFUL = /^(src|href)$/;
 
 function sanitizeHtml(html, options) {
-  var $wrapper = $("<body>");
+  var $wrapper = $wrap("<body>");
   $wrapper.html(html);
   sanitizeChildren($wrapper, initializeOptions(options));
   return $wrapper.html();
@@ -196,7 +198,7 @@ function sanitizeElement($el, options) {
 
 function sanitizeChildren($el, options) {
   $el.children().each(function() {
-    sanitizeElement($(this), options);
+    sanitizeElement($wrap(this), options);
   });
 }
 
@@ -265,8 +267,7 @@ function getAttributeName(attributes, index) {
 
 module.exports = cockblock;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],3:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 /*!
  * assertion-error
  * Copyright(c) 2013 Jake Luer <jake@qualiancy.com>
@@ -378,10 +379,10 @@ AssertionError.prototype.toJSON = function (stack) {
   return props;
 };
 
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 module.exports = require('./lib/chai');
 
-},{"./lib/chai":5}],5:[function(require,module,exports){
+},{"./lib/chai":4}],4:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -470,7 +471,7 @@ exports.use(should);
 var assert = require('./chai/interface/assert');
 exports.use(assert);
 
-},{"./chai/assertion":6,"./chai/config":7,"./chai/core/assertions":8,"./chai/interface/assert":9,"./chai/interface/expect":10,"./chai/interface/should":11,"./chai/utils":22,"assertion-error":3}],6:[function(require,module,exports){
+},{"./chai/assertion":5,"./chai/config":6,"./chai/core/assertions":7,"./chai/interface/assert":8,"./chai/interface/expect":9,"./chai/interface/should":10,"./chai/utils":21,"assertion-error":2}],5:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -602,7 +603,7 @@ module.exports = function (_chai, util) {
   });
 };
 
-},{"./config":7}],7:[function(require,module,exports){
+},{"./config":6}],6:[function(require,module,exports){
 module.exports = {
 
   /**
@@ -654,7 +655,7 @@ module.exports = {
 
 };
 
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -1981,7 +1982,7 @@ module.exports = function (chai, _) {
   });
 };
 
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3039,7 +3040,7 @@ module.exports = function (chai, util) {
   ('Throw', 'throws');
 };
 
-},{}],10:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3053,7 +3054,7 @@ module.exports = function (chai, util) {
 };
 
 
-},{}],11:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3133,7 +3134,7 @@ module.exports = function (chai, util) {
   chai.Should = loadShould;
 };
 
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /*!
  * Chai - addChainingMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3246,7 +3247,7 @@ module.exports = function (ctx, name, method, chainingBehavior) {
   });
 };
 
-},{"../config":7,"./flag":15,"./transferFlags":29}],13:[function(require,module,exports){
+},{"../config":6,"./flag":14,"./transferFlags":28}],12:[function(require,module,exports){
 /*!
  * Chai - addMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3291,7 +3292,7 @@ module.exports = function (ctx, name, method) {
   };
 };
 
-},{"../config":7,"./flag":15}],14:[function(require,module,exports){
+},{"../config":6,"./flag":14}],13:[function(require,module,exports){
 /*!
  * Chai - addProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3333,7 +3334,7 @@ module.exports = function (ctx, name, getter) {
   });
 };
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3367,7 +3368,7 @@ module.exports = function (obj, key, value) {
   }
 };
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /*!
  * Chai - getActual utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3387,7 +3388,7 @@ module.exports = function (obj, args) {
   return args.length > 4 ? args[4] : obj._obj;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*!
  * Chai - getEnumerableProperties utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3414,7 +3415,7 @@ module.exports = function getEnumerableProperties(object) {
   return result;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 /*!
  * Chai - message composition utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3466,7 +3467,7 @@ module.exports = function (obj, args) {
   return flagMsg ? flagMsg + ': ' + msg : msg;
 };
 
-},{"./flag":15,"./getActual":16,"./inspect":23,"./objDisplay":24}],19:[function(require,module,exports){
+},{"./flag":14,"./getActual":15,"./inspect":22,"./objDisplay":23}],18:[function(require,module,exports){
 /*!
  * Chai - getName utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3488,7 +3489,7 @@ module.exports = function (func) {
   return match && match[1] ? match[1] : "";
 };
 
-},{}],20:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /*!
  * Chai - getPathValue utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3592,7 +3593,7 @@ function _getPathValue (parsed, obj) {
   return res;
 };
 
-},{}],21:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /*!
  * Chai - getProperties utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -3629,7 +3630,7 @@ module.exports = function getProperties(object) {
   return result;
 };
 
-},{}],22:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011 Jake Luer <jake@alogicalparadox.com>
@@ -3745,7 +3746,7 @@ exports.addChainableMethod = require('./addChainableMethod');
 exports.overwriteChainableMethod = require('./overwriteChainableMethod');
 
 
-},{"./addChainableMethod":12,"./addMethod":13,"./addProperty":14,"./flag":15,"./getActual":16,"./getMessage":18,"./getName":19,"./getPathValue":20,"./inspect":23,"./objDisplay":24,"./overwriteChainableMethod":25,"./overwriteMethod":26,"./overwriteProperty":27,"./test":28,"./transferFlags":29,"./type":30,"deep-eql":31}],23:[function(require,module,exports){
+},{"./addChainableMethod":11,"./addMethod":12,"./addProperty":13,"./flag":14,"./getActual":15,"./getMessage":17,"./getName":18,"./getPathValue":19,"./inspect":22,"./objDisplay":23,"./overwriteChainableMethod":24,"./overwriteMethod":25,"./overwriteProperty":26,"./test":27,"./transferFlags":28,"./type":29,"deep-eql":30}],22:[function(require,module,exports){
 // This is (almost) directly from Node.js utils
 // https://github.com/joyent/node/blob/f8c335d0caf47f16d31413f89aa28eda3878e3aa/lib/util.js
 
@@ -4077,7 +4078,7 @@ function objectToString(o) {
   return Object.prototype.toString.call(o);
 }
 
-},{"./getEnumerableProperties":17,"./getName":19,"./getProperties":21}],24:[function(require,module,exports){
+},{"./getEnumerableProperties":16,"./getName":18,"./getProperties":20}],23:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -4128,7 +4129,7 @@ module.exports = function (obj) {
   }
 };
 
-},{"../config":7,"./inspect":23}],25:[function(require,module,exports){
+},{"../config":6,"./inspect":22}],24:[function(require,module,exports){
 /*!
  * Chai - overwriteChainableMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -4183,7 +4184,7 @@ module.exports = function (ctx, name, method, chainingBehavior) {
   };
 };
 
-},{}],26:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*!
  * Chai - overwriteMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -4236,7 +4237,7 @@ module.exports = function (ctx, name, method) {
   }
 };
 
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*!
  * Chai - overwriteProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -4292,7 +4293,7 @@ module.exports = function (ctx, name, getter) {
   });
 };
 
-},{}],28:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /*!
  * Chai - test utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -4320,7 +4321,7 @@ module.exports = function (obj, args) {
   return negate ? !expr : expr;
 };
 
-},{"./flag":15}],29:[function(require,module,exports){
+},{"./flag":14}],28:[function(require,module,exports){
 /*!
  * Chai - transferFlags utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -4366,7 +4367,7 @@ module.exports = function (assertion, object, includeAll) {
   }
 };
 
-},{}],30:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*!
  * Chai - type utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -4413,10 +4414,10 @@ module.exports = function (obj) {
   return typeof obj;
 };
 
-},{}],31:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 module.exports = require('./lib/eql');
 
-},{"./lib/eql":32}],32:[function(require,module,exports){
+},{"./lib/eql":31}],31:[function(require,module,exports){
 /*!
  * deep-eql
  * Copyright(c) 2013 Jake Luer <jake@alogicalparadox.com>
@@ -4675,10 +4676,10 @@ function objectEqual(a, b, m) {
   return true;
 }
 
-},{"buffer":37,"type-detect":33}],33:[function(require,module,exports){
+},{"buffer":36,"type-detect":32}],32:[function(require,module,exports){
 module.exports = require('./lib/type');
 
-},{"./lib/type":34}],34:[function(require,module,exports){
+},{"./lib/type":33}],33:[function(require,module,exports){
 /*!
  * type-detect
  * Copyright(c) 2013 jake luer <jake@alogicalparadox.com>
@@ -4822,9 +4823,12 @@ Library.prototype.test = function (obj, type) {
   }
 };
 
-},{}],35:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
+(function (global){
 var expect = require("chai").expect;
 var cockblock = require("..");
+
+cockblock.$ = (typeof window !== "undefined" ? window['$'] : typeof global !== "undefined" ? global['$'] : null);
 
 describe("cockblock()", function() {
   function html(given, expected) {
@@ -4947,7 +4951,8 @@ describe("getAttributeName()", function() {
   });
 });
 
-},{"..":1,"chai":4}],36:[function(require,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"..":1,"chai":3}],35:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -5063,7 +5068,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],37:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -6771,7 +6776,7 @@ function numberIsNaN (obj) {
   return obj !== obj // eslint-disable-line no-self-compare
 }
 
-},{"base64-js":36,"ieee754":38}],38:[function(require,module,exports){
+},{"base64-js":35,"ieee754":37}],37:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -6857,4 +6862,4 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}]},{},[35]);
+},{}]},{},[34]);

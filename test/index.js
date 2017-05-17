@@ -1,6 +1,8 @@
 var expect = require("chai").expect;
 var cockblock = require("..");
 
+cockblock.$ = require("cheerio");
+
 describe("cockblock()", function() {
   function html(given, expected) {
     if (arguments.length == 1) expected = given;
