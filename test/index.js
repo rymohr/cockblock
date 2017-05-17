@@ -32,6 +32,8 @@ describe("cockblock()", function() {
 
   // TODO: Add remaining elements
   describe("permits", function() {
+    it("undefined", html(undefined, ''));
+    it('""', html('', ''));
     it("<a>", html('<a>one</a>'));
     it("<a href>", html('<a href="#">one</a>'));
     it("<aside>", html('<aside></aside>'));
