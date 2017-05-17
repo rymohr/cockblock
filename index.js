@@ -3,6 +3,8 @@ function cockblock(html, options) {
 }
 
 function $wrap(value) {
+  cockblock.$ = cockblock.$ || window.$;
+
   if (!cockblock.$) {
     throw new Error("cockblock.$ must be set to cheerio to jquery");
   }
